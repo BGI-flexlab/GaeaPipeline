@@ -57,7 +57,7 @@ class Logger(object):
 def deleteFile(p):
     if os.path.exists(p):
         os.remove(p)
-       
+    
 def printtime(message, *args):
     if args:
         message = message % args
@@ -80,8 +80,10 @@ def writeToFile(message, filePath):
     sys.stderr.flush()
     sys.exit(3)
     
-def printflush(message):
-    sys.stdout.write(message+'\n')
+def printflush(message, *args):
+    if args:
+        message = message % args
+    print message
     sys.stdout.flush()
     sys.stderr.flush()
 
@@ -142,8 +144,7 @@ def loadModule(codePath):
         codeDir = os.path.dirname(codePath)
         codeFile = os.path.basename(codePath)
         moduleName,_ = os.path.splitext(codeFile)
-        if not codeDir in sys.path:
-            sys.path.append(codeDir)
+        sys.path.append(codeDir)
         try:
             fin = open(codePath, 'r')
         except IOError,e:
@@ -153,10 +154,12 @@ def loadModule(codePath):
         try: fin.close()
         except: pass
 
-def search_mod(module,modDir):
-    dirList = modDir.split(":")
-    for d in dirList:
-        codePath = os.path.join(d,module+".py")
-        if os.path.exists(codePath):
-            return loadModule(codePath)
+def search_mod(module_name, modDir, version=''):
+    dir_list = modDir.split(":")
+    if version:
+        module_name = "{}-{}".format(module_name,version)
+    for d in dir_list:
+        code_path = os.path.join(d, module_name + ".py")
+        if os.path.exists(code_path):
+            return loadModule(code_path)
     return -1

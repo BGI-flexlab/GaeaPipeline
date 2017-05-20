@@ -151,39 +151,37 @@ class ParseConfig(object):
             else:
                 logger.error("[ERROR] Can not find this cluster: %s" % cluster)
                 exit(2)
-        if cfg['ref'].get('normal'):
-            for key in cfg['ref']['normal']:
-                value = cfg['ref']['normal'][key]
-                if value:
-                    if not os.path.exists(value):
-                        if excfg['ref']['normal'].has_key(value) and excfg['ref']['normal'][value].has_key(key):
-                            cfg['ref']['normal'][key] = excfg['ref']['normal'][value][key]
+        if 'normal' in cfg['ref'] and 'ref' in cfg['ref']['normal']:
+            value = cfg['ref']['normal']['ref']
+            if value:
+                if not os.path.exists(value):
+                    if excfg['ref']['normal'].has_key(value) and excfg['ref']['normal'][value].has_key('ref'):
+                        for key in excfg['ref']['normal'][value]:
+                            if not key in cfg['ref']['normal'] or not os.path.exists(cfg['ref']['normal'][key]):
+                                cfg['ref']['normal'][key] = excfg['ref']['normal'][value][key]
+                else:
+                    if not 'gaeaIndex' in cfg['ref']['normal'] or not os.path.exists(cfg['ref']['normal']['gaeaIndex']):
+                        gaeaindex = os.path.join(os.path.dirname(value), 'GaeaIndex', 'ref_bn.list')
+                        if os.path.exists(gaeaindex):
+                            cfg['ref']['normal']['gaeaIndex'] = gaeaindex
                         else:
-                            logger.error("[ERROR] Can not find this ref file: normal %s = %s " % (key,value))
+                            logger.error("[ERROR] Can not find ref.normale.gaeaIndex!")
                             exit(2)
+                                
+        if 'male' in cfg['ref'] and 'ref' in cfg['ref']['male']:
+            value = cfg['ref']['male']['ref']
+            if value and not os.path.exists(value):
+                if excfg['ref']['male'].has_key(value) and excfg['ref']['male'][value].has_key('ref'):
+                    for key in cfg['ref']['male'][value]:
+                        cfg['ref']['male'][key] = excfg['ref']['male'][value][key]
                             
-        if cfg['ref'].get('male'):
-            for key in cfg['ref']['male']:
-                value = cfg['ref']['male'][key]
-                if value:
-                    if not os.path.exists(value):
-                        if excfg['ref']['male'].has_key(value) and excfg['ref']['male'][value].has_key(key):
-                            cfg['ref']['male'][key] = excfg['ref']['male'][value][key]
-                        else:
-                            logger.error("[ERROR] Can not find this ref file: male %s = %s " % (key,value))
-                            exit(2)
-                            
-        if cfg['ref'].get('female'):
-            for key in cfg['ref']['female']:
-                value = cfg['ref']['female'][key]
-                if value:
-                    if not os.path.exists(value):
-                        if excfg['ref']['female'].has_key(value) and excfg['ref']['female'][value].has_key(key):
-                            cfg['ref']['female'][key] = excfg['ref']['female'][value][key]
-                        else:
-                            logger.error("[ERROR] Can not find this ref file: female %s = %s " % (key,value))
-                            exit(2)
-    
+        if 'female' in cfg['ref'] and 'ref' in cfg['ref']['female']:
+            value = cfg['ref']['female']['ref']
+            if value and not os.path.exists(value):
+                if excfg['ref']['female'].has_key(value) and excfg['ref']['female'][value].has_key('ref'):
+                    for key in cfg['ref']['female'][value]:
+                        cfg['ref']['female'][key] = excfg['ref']['female'][value][key]
+
     def parse_usercfg(self,cfgfile):
         cfg = ConfigObj(cfgfile)
         self.extendcfg(cfg)
@@ -204,25 +202,25 @@ class ParseConfig(object):
         return bundle_rcopy(userConf)
                  
     def parse(self,user_config=''):
-        userConf = bundle()
+        configInfo = bundle()
         if user_config:
-            if user_config.endswith('.json') or user_config.endswith('config.txt'):
-                userConf = self.parse_userjson(user_config)
+            if user_config.endswith('.json') or user_config.endswith('config.json'):
+                configInfo = self.parse_userjson(user_config)
             else:
                 try:
-                    userConf = self.parse_usercfg(user_config)
+                    configInfo = self.parse_usercfg(user_config)
                 except Exception,e:  
                     print Exception,"%s, "%user_config,e
         
-        f = open(self.config, 'r')
-        try: data = f.read()
-        finally: f.close()
+        # f = open(self.config, 'r')
+        # try: data = f.read()
+        # finally: f.close()
         
-        try: 
-            configInfo = bundle(clean(json.loads(data)))
-        except Exception,e:  
-            print Exception,"%s, "%self.config,e
-        configInfo.rupdate(userConf)
+        # try:
+        #     configInfo = bundle(clean(json.loads(data)))
+        # except Exception,e:
+        #     print Exception,"%s, "%self.config,e
+        # configInfo.rupdate(userConf)
         
         if not configInfo.has_key('Path'):
             configInfo.Path = bundle()
