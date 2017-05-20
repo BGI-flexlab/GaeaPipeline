@@ -315,7 +315,6 @@ def wfc_signal_handler(signum, frame):
     raise RuntimeError('Signal handler called with signal '+str(signum))
 
 if __name__ == "__main__":
-    signal.signal(signal.SIGBUS, wfc_signal_handler)
     signal.signal(signal.SIGSEGV, wfc_signal_handler)
     signal.signal(signal.SIGILL, wfc_signal_handler)
     signal.signal(signal.SIGFPE, wfc_signal_handler)

@@ -481,8 +481,8 @@ USAGE
                     for step in job[1].split(','):
                         stepscript = state.results[step]['script']['multi_sample']
                         step_err = '%s.e' %stepscript
-                        step_out = '%s.o' %stepscript
-                        endcmd = ['sbatch','-p',args.partition,'-d',hold_jid,'-e',sh_err,'-o',sh_out, script]
+                        step_err = '%s.o' %stepscript
+                        endcmd = ['sbatch', '-p', args.partition, '-d',hold_jid,'-e',step_err,'-o',step_err, stepscript]
                         p = subprocess.Popen(endcmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                         jobid = check_out_sdn(p, state.failFile,True)
                         hold_jid = 'afterok:%s' %jobid
