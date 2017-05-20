@@ -61,11 +61,11 @@ def writeRunShell(gaeaShell,state):
     print >>out, '\techo "       Run Tasks ( SZ-SGE ) : ./run.sh submit"\n}'
     print >>out, 'if [ "$runtype" == "write" ] || [ "$runtype" == "w" ]; then'
     print >>out, '\truntype="write"'
-    print >>out, '\techo "write gaea.sh..."'
     print >>out, 'elif [ "$runtype" == "submit" ] || [ "$runtype" == "s" ]; then'
     print >>out, '\truntype="submit"'
     print >>out, 'else'
     print >>out, '\truntype="local"'
+    print >>out, '\techo "write gaea.sh..."'
     print >>out, 'fi'
     if state.option.multi:
         print >>out, "jobSubmit.py \\"
@@ -127,7 +127,7 @@ def run(args):
         if usercfg.hadoop.is_at_TH:
             if not state.option.partition:
                 state.option.partition = 'bgi_gd'
-        elif not state.option.queue or not state.option.partition:
+        elif not state.option.queue:  #or not state.option.partition:
                 raise RuntimeError("Has Standalone step, please set parameters: -q -p for SGE")
         
     sampleInfo = bundle()
@@ -149,8 +149,9 @@ def run(args):
             modname = 'self_defined'
             self_defined_step.append(stepList[1])
             
+        version = usercfg[modname].version if modname in usercfg and 'version' in usercfg[modname] else ''
         try:
-            mod = search_mod(stepList[0]+'_'+modname,usercfg.Path.appDir)
+            mod = search_mod(stepList[0]+'_'+modname, usercfg.Path.appDir, version)
         except Exception,e: 
             raise RuntimeError("search mod failed, please check your APP's Class name and INIT. %s " % e)
             
@@ -218,7 +219,8 @@ def run(args):
             if multi_step:
                 rerun_fh.write('%s\t%s\n' % (state.option.multiSampleName,','.join(multi_step)))
         else:
-            state.analysisList = state.analysisList[1:]
+            if state.analysisList[0] == 'init':
+                state.analysisList = state.analysisList[1:]
             jobs = ','.join(state.analysisList)
             rerun_fh.write('%s\t%s\n' % (state.option.multiSampleName,jobs))
     
@@ -230,24 +232,8 @@ def run(args):
     runShell = os.path.join(usercfg.scriptsDir,'run.sh')
     writeRunShell(runShell,state)
     os.chmod(runShell, stat.S_IRWXU+stat.S_IRGRP+stat.S_IXGRP+stat.S_IROTH+stat.S_IXOTH)
-    if args.type == 'write':
-        printtime("\nPlease run scripts/run.sh to submit tasks.")
-        subprocess.call("sh %s write" % runShell,shell=True)
-    elif args.type == 'local':
-        printtime("\nLocal running...")
-        p = subprocess.Popen("sh %s local" % runShell,shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        for line in p.stderr.readlines():
-            printflush(line)
-        for line in p.stdout.readlines():
-            printflush(line)
-        p.wait()
-    elif args.type == 'submit':
-        p = subprocess.Popen("sh %s submit" % runShell,shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        for line in p.stderr.readlines():
-            printflush(line[:-1])
-        for line in p.stdout.readlines():
-            printflush(line[:-1])
-        p.wait()
+    printtime("\nPlease run scripts/run.sh to submit tasks.")
+    subprocess.call("sh %s write" % runShell,shell=True)
 
 def main(argv=None): # IGNORE:C0111
     '''Command line options.'''
@@ -283,6 +269,7 @@ USAGE
         parser.add_argument("-q", "--queue", dest="queue", help="the queue of the job. [default: %(default)s]")
         parser.add_argument("-p", "--partition", dest="partition",  help="the job partition. [default: %(default)s]")
         parser.add_argument("-t", "--type", dest="type", choices=['write','local','submit'], type=str, default="write", help="1.write: just write run scripts; 2.local: run tasks on one local node; 3:submit: submit tasks to SGE [default: %(default)s]")
+        parser.add_argument("-u", "--unclean", action="store_true", help="Don't clean intermediate data,[default: %(default)s]")
         parser.add_argument('-V', '--version', action='version', version=program_version_message)
 
         # Process arguments
@@ -296,9 +283,12 @@ USAGE
         
         args.workdir = os.path.abspath(args.workdir)
         args.sampleList = os.path.abspath(args.sampleList)
+        if not args.dirHDFS.startswith('/user'):
+            args.dirHDFS = "/user{}".format(args.dirHDFS)
         
         if args.projectId:
-            args.workdir = os.path.join(args.workdir,args.projectId)
+            args.workdir = os.path.join(args.workdir, args.projectId)
+            args.dirHDFS = os.path.join(args.dirHDFS, args.projectId)
         
         run(args)
         

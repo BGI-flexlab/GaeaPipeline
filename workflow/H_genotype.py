@@ -9,7 +9,7 @@ class genotype(Workflow):
     """ genotype """
 
     INIT = bundle(genotype=bundle())
-    INIT.genotype.program = "Gaeagenotype.jar"
+    INIT.genotype.program = "GaeaGenotyper.jar"
     INIT.genotype.parameter = "-genotype_likelihoods_model BOTH  -stand_call_conf 30.0 -stand_emit_conf 10.0 -dbsnp file:///ifs4/ISDC_BD/GaeaProject/resource/dbsnp_135.hg19.modify.vcf"
 
     def run(self, impl, dependList):

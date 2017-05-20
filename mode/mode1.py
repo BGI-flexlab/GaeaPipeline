@@ -25,11 +25,8 @@ def parse_sample(sampleList):
                 pool = field[4]
                 fq1 = field[5]
                 fq2 = ''
-                if not os.path.exists(fq1):
-                    raise RuntimeError("%s don't exists!" % fq1)
-                    
                 if not os.path.isfile(fq1):
-                    if field_num >= 8:
+                    if os.path.isdir(fq1) and field_num >= 8:
                         pub_path = fq1
                         pooling = field[6]
                         lib = field[7]
@@ -37,7 +34,7 @@ def parse_sample(sampleList):
                         if len(fq1s) == 0:
                             raise RuntimeError("fq1 don't exists at pooling:%s & lib:%s" % (pooling,lib))
                     else:
-                        raise RuntimeError("wrong sample.list format!")
+                        raise RuntimeError("%s don't exists!" % fq1)
                 else:
                     fq1s = [fq1]
                     if field_num > 6:
@@ -49,6 +46,11 @@ def parse_sample(sampleList):
                             raise RuntimeError("wrong insert info:insert size is below 10!")
                         else:
                             insert_size = field[7]
+            elif field_num <= 3:
+                fq1 = field[1]
+                fq2 = field[2]
+                fq1s = [fq1]
+
             for fq1 in fq1s:
                 total_number += 1
                 fq_dir = os.path.abspath(os.path.dirname(fq1))

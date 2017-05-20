@@ -39,7 +39,8 @@ class alignment(Workflow):
         elif self.hadoop.is_at_TH:
             hadoop2_reducer_mem = '20480'
         else:
-            hadoop2_reducer_mem = '7168'
+            #hadoop2_reducer_mem = '7168'
+            hadoop2_reducer_mem = '20480'
 
         if self.alignment.bwaReducerNumDivide:
             pass
@@ -50,6 +51,8 @@ class alignment(Workflow):
 
         if not self.alignment.get('bwaReducerNum'):
             self.alignment.bwaReducerNum = int(self.hadoop.reducer_num)/int(self.alignment.bwaReducerNumDivide)
+        if self.alignment.bwaReducerNum < 1:
+            self.alignment.bwaReducerNum = 1 
 
         hadoop_param = '-D mapred.map.tasks=%s ' % str(self.hadoop.mapper_num)
         hadoop_param += '-D mapred.reduce.tasks=%s ' % str(self.alignment.bwaReducerNum)
@@ -57,10 +60,11 @@ class alignment(Workflow):
             hadoop_param += '-D mapreduce.reduce.memory.mb=%s ' % hadoop2_reducer_mem
         hadoop_param += "-D stream.num.map.output.key.fields=%s " % self.alignment.fqInputOutputKey
         hadoop_param += "-D num.key.fields.for.partition=%s " % self.alignment.fqInputPartitionKey
+        hadoop_param += "-libjars=%s " % self.alignment.streamingJar
         hadoop_param += "-partitioner org.apache.hadoop.mapred.lib.KeyFieldBasedPartitioner "
         hadoop_param += "-inputformat %s" % self.alignment.fqInputFormat
         ParamDict = {
-            "PROGRAM": "%s jar %s" % (self.hadoop.bin, self.alignment.streamingJar),
+            "PROGRAM": "%s jar %s" % (self.hadoop.bin, self.hadoop.streamingJar),
             "MAPPER": '"/bin/cat"'
         }
 

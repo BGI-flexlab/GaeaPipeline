@@ -9,7 +9,7 @@ class rmdup(Workflow):
     """ rmdup """
 
     INIT = bundle(rmdup=bundle())
-    INIT.rmdup.program = "GaeaDuplicateMarker.jar"
+    INIT.rmdup.program = "gaea-1.0.0.jar"
     INIT.rmdup.parameter_SE = ' -S '
     INIT.rmdup.parameter = ''
 
@@ -29,7 +29,7 @@ class rmdup(Workflow):
         cmd = []
         cmd.append("%s ${OUTDIR}/" % fs_cmd.delete )
         cmd.append("%s ${INPUT}/*/_SUCCESS ${INPUT}/*/_logs" % fs_cmd.delete )
-        cmd.append("${PROGRAM} -I ${INPUT} -O ${OUTDIR} -i 1 -R ${REDUCERNUM} ${PARAM}")
+        cmd.append("${PROGRAM} -i ${INPUT} -o ${OUTDIR} -R ${REDUCERNUM} ${PARAM}")
             
         for sampleName in inputInfo:
             scriptsdir = impl.mkdir(self.gaeaScriptsDir,sampleName)
@@ -37,7 +37,7 @@ class rmdup(Workflow):
             
             #global param
             ParamDict = {
-                    "PROGRAM": "%s jar %s" % (self.hadoop.bin, self.rmdup.program),
+                    "PROGRAM": "%s jar %s MarkDuplicate" % (self.hadoop.bin, self.rmdup.program),
                     "INPUT": inputInfo[sampleName],
                     "OUTDIR": hdfs_outputPath,
                     "REDUCERNUM":self.hadoop.reducer_num,

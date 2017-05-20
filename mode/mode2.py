@@ -14,7 +14,7 @@ def parse_sample(sampleList):
             if re.match(r"^\s*$", line):
                 continue
             sampleName = ''
-            m = re.match(r"^>(\S+)\s*$", line)
+            m = re.match(r"^>(\S+)$", line)
             if m:
                 sampleName = m.group(1)
                 if not sampleInfo.has_key(sampleName):

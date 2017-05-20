@@ -211,9 +211,15 @@ def single_run(args,state,rerunInfo):
                         if state[step].get('mem'):
                             vf = 'vf=%s' % state[step].mem
                         if hold_jid:    
-                            cmd = ['qsub','-cwd','-l',vf,'-hold_jid',hold_jid,'-q',args.queue,'-P',args.partition,'-e',sh_err,'-o',sh_out, script]
+                            if args.partition:
+                                cmd = ['qsub','-cwd','-l',vf,'-hold_jid',hold_jid,'-q',args.queue,'-P',args.partition,'-e',sh_err,'-o',sh_out, script]
+                            else:
+                                cmd = ['qsub','-cwd','-l',vf,'-hold_jid',hold_jid,'-q',args.queue,'-e',sh_err,'-o',sh_out, script]
                         else:
-                            cmd = ['qsub','-cwd','-l',vf,'-q',args.queue,'-P',args.partition,'-e',sh_err,'-o',sh_out, script]
+                            if args.partition:
+                                cmd = ['qsub','-cwd','-l',vf,'-q',args.queue,'-P',args.partition,'-e',sh_err,'-o',sh_out, script]
+                            else:
+                                cmd = ['qsub','-cwd','-l',vf,'-q',args.queue,'-e',sh_err,'-o',sh_out, script]
                         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                         jobIdDict[sampleName] = check_out_sdn(p, failFile)
                     lastStepJobId = jobIdDict[sampleName] 
@@ -222,7 +228,15 @@ def single_run(args,state,rerunInfo):
             elif args.type == 'submit':
                 sh_err = '%s.e' % gaeaShell
                 sh_out = '%s.o' % gaeaShell
-                cmd = ['qsub','-cwd','-l','vf=2g','-q','gaea.q','-P','hadoop','-e',sh_err,'-o',sh_out, gaeaShell]
+                gaea_queue = 'gaea.q'
+                gaea_partition = 'hadoop'
+                if state.hadoop.cluster != 'cluster35':
+                    gaea_queue = args.queue
+                    gaea_partition = args.partition
+                if gaea_partition:
+                    cmd = ['qsub','-cwd','-l','vf=2g','-q',gaea_queue,'-P',gaea_partition,'-e',sh_err,'-o',sh_out, gaeaShell]
+                else:
+                    cmd = ['qsub','-cwd','-l','vf=2g','-q',gaea_queue,'-e',sh_err,'-o',sh_out, gaeaShell]
                 hold_jid = ''
                 if n > 0:
                     for ds in analysisDict[job.split(',')[0]].depend:
@@ -230,7 +244,10 @@ def single_run(args,state,rerunInfo):
                             for sample in state.results[ds].jobId:
                                 hold_jid =  hold_jid + '%s,' % state.results[ds].jobId[sample]
                     if hold_jid:
-                        cmd = ['qsub','-cwd','-l','vf=2g','-hold_jid',hold_jid,'-q','gaea.q','-P','hadoop','-e',sh_err,'-o',sh_out, gaeaShell]
+                        if gaea_partition:
+                            cmd = ['qsub','-cwd','-l','vf=2g','-hold_jid',hold_jid,'-q',gaea_queue,'-P',gaea_partition,'-e',sh_err,'-o',sh_out, gaeaShell]
+                        else:
+                            cmd = ['qsub','-cwd','-l','vf=2g','-hold_jid',hold_jid,'-q',gaea_queue,'-e',sh_err,'-o',sh_out, gaeaShell]
                 p = subprocess.Popen(cmd,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 for line in p.stderr.readlines():
                     printtime('ERROR: %s' % line[:-1])
@@ -287,9 +304,15 @@ def single_run(args,state,rerunInfo):
                         
                     if hold_jid:
                         state.results[step]['hold_jid'] = hold_jid  
-                        cmd = ['qsub','-cwd','-l',vf,'-hold_jid',hold_jid,'-q',args.queue,'-P',args.partition,'-e',sh_err,'-o',sh_out, script]
+                        if args.partition:
+                            cmd = ['qsub','-cwd','-l',vf,'-hold_jid',hold_jid,'-q',args.queue,'-P',args.partition,'-e',sh_err,'-o',sh_out, script]
+                        else:
+                            cmd = ['qsub','-cwd','-l',vf,'-hold_jid',hold_jid,'-q',args.queue,'-e',sh_err,'-o',sh_out, script]
                     else:
-                        cmd = ['qsub','-cwd','-l',vf,'-q',args.queue,'-P',args.partition,'-e',sh_err,'-o',sh_out, script]
+                        if args.partition:
+                            cmd = ['qsub','-cwd','-l',vf,'-q',args.queue,'-P',args.partition,'-e',sh_err,'-o',sh_out, script]
+                        else:
+                            cmd = ['qsub','-cwd','-l',vf,'-q',args.queue,'-e',sh_err,'-o',sh_out, script]
                     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     jobIdDict[sampleName] = check_out_sdn(p, failFile)
                     lastStepJobId = jobIdDict[sampleName]
@@ -325,6 +348,7 @@ USAGE
         parser = ArgumentParser(description=program_license, formatter_class=RawDescriptionHelpFormatter)
         parser.add_argument("-s", "--state", dest="state", help="state file,[default: %(default)s]",required=True)
         parser.add_argument("-r", "--rerun", dest="rerun", default='all',help="rerun file,[default: %(default)s]")
+#         parser.add_argument("-s", "--submit", action="store_true", default=False, help="submit to SGE. if False , just generator gaea.sh. [default: %(default)s]")
         parser.add_argument("-t", "--type", dest="type", choices=['write','local','submit'], type=str, default="write", help="1.write: just write run scripts; 2.local: run tasks on one local node; 3:submit: submit tasks to SGE [default: %(default)s]")
         parser.add_argument("-q", "--queue", dest="queue", help="the queue of the job. [default: %(default)s]")
         parser.add_argument("-p", "--partition", dest="partition",  help="the job partition. [default: %(default)s]")
@@ -373,7 +397,7 @@ USAGE
                 writefail("Has standalone step, please submit tasks to SGE. (-t submit)",state.failFile) 
                 
             if not state.hadoop.is_at_TH:
-                if not args.queue or not args.partition:
+                if not args.queue:  #  or not args.partition:
                     writefail("Has standalone step, please set parameters: -q -P ",state.failFile) 
                     
         multirerun = []
@@ -405,7 +429,10 @@ USAGE
                     stepscript = state.results[step]['script']['multi_sample']
                     step_err = '%s.e' %stepscript
                     step_out = '%s.o' %stepscript
-                    cmd = ['qsub','-cwd','-l','vf=0.5g', '-hold_jid',lastJobId,'-q',args.queue,'-P',args.partition,'-e',step_err,'-o',step_out, stepscript]
+                    if args.partition:
+                        cmd = ['qsub','-cwd','-l','vf=0.5g', '-hold_jid',lastJobId,'-q',args.queue,'-P',args.partition,'-e',step_err,'-o',step_out, stepscript]
+                    else:
+                        cmd = ['qsub','-cwd','-l','vf=0.5g', '-hold_jid',lastJobId,'-q',args.queue,'-e',step_err,'-o',step_out, stepscript]
                     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     for line in p.stdout.readlines():
                         printtime(line[:-1])
@@ -420,12 +447,18 @@ USAGE
             cmd = []
             if hold_jid:
                 if state.hasSDNstep:
-                    cmd = ['qsub','-cwd','-l','vf=0.5g', '-hold_jid',hold_jid,'-q',args.queue,'-P',args.partition,'-e',sh_err,'-o',sh_out, script]
+                    if args.partition:
+                        cmd = ['qsub','-cwd','-l','vf=0.5g', '-hold_jid',hold_jid,'-q',args.queue,'-P',args.partition,'-e',sh_err,'-o',sh_out, script]
+                    else:
+                        cmd = ['qsub','-cwd','-l','vf=0.5g', '-hold_jid',hold_jid,'-q',args.queue,'-e',sh_err,'-o',sh_out, script]
                 else:
                     cmd = ['qsub','-cwd','-l','vf=0.5g', '-hold_jid',hold_jid,'-q','gaea.q','-P','hadoop','-e',sh_err,'-o',sh_out, script]
             else:
                 if state.hasSDNstep:
-                    cmd = ['qsub','-cwd','-l','vf=0.5g', '-q',args.queue,'-P',args.partition,'-e',sh_err,'-o',sh_out, script]
+                    if args.partition:
+                        cmd = ['qsub','-cwd','-l','vf=0.5g', '-q',args.queue,'-P',args.partition,'-e',sh_err,'-o',sh_out, script]
+                    else:
+                        cmd = ['qsub','-cwd','-l','vf=0.5g', '-q',args.queue,'-e',sh_err,'-o',sh_out, script]
                 else:
                     cmd = ['qsub','-cwd','-l','vf=0.5g', '-q','gaea.q','-P','hadoop','-e',sh_err,'-o',sh_out, script]
             
@@ -449,13 +482,14 @@ USAGE
                         stepscript = state.results[step]['script']['multi_sample']
                         step_err = '%s.e' %stepscript
                         step_out = '%s.o' %stepscript
-                        endcmd = ['sbatch','-p',args.partition,'-d',hold_jid,'-e',step_err,'-o',step_out, script]
+                        endcmd = ['sbatch','-p',args.partition,'-d',hold_jid,'-e',sh_err,'-o',sh_out, script]
                         p = subprocess.Popen(endcmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                         jobid = check_out_sdn(p, state.failFile,True)
                         hold_jid = 'afterok:%s' %jobid
     #                     p = subprocess.Popen("sh stepscript > step_out 2> step_err", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
             failed = False
+            logFile = open(state.logfile,'r')
             if os.path.exists(state.logfile):
                 logFile = open(state.logfile,'r')
                 for line in logFile:
@@ -486,3 +520,4 @@ USAGE
 
 if __name__ == "__main__":
     sys.exit(main())
+
