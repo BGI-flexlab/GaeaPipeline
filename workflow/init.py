@@ -17,7 +17,7 @@ class init(Workflow):
     INIT.init.bgzip = 'bgzip'
     INIT.init.samtools = 'samtools'
     INIT.init.qualitySystem = ''
-    INIT.init.check_log = '%s'%os.path.join(os.environ['GAEA_HOME'],'bin','check_log.pl')
+    INIT.init.check_log = '%s'%os.path.join(os.environ['GAEA_HOME'], 'check_log.pl')
     INIT.hadoop.ishadoop2 = False
     INIT.hadoop.is_at_TH = False
     INIT.hadoop.fs_mode = 'hdfs'

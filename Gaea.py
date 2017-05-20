@@ -82,8 +82,7 @@ def writeRunShell(gaeaShell,state):
 impl = implapp.impl()
 
 def run(args):
-    binPath = os.path.split(os.path.realpath(__file__))[0]
-    os.environ['GAEA_HOME'] = os.path.split(binPath)[0]
+    os.environ['GAEA_HOME'] = os.path.split(os.path.realpath(__file__))[0]
     createVar = locals()
     defaultConfig = os.path.join(os.environ['GAEA_HOME'],'config','default.json')
     usercfg = bundle()
@@ -274,24 +273,24 @@ USAGE
 
         # Process arguments
         args = parser.parse_args()
-        
+
         if not os.path.exists(os.path.abspath(args.sampleList)):
             raise RuntimeError("%s: No such file or directory." % args.sampleList)
-        
+
         if not os.path.exists(os.path.abspath(args.config)):
             raise RuntimeError("%s: No such file or directory." % args.config)
-        
+
         args.workdir = os.path.abspath(args.workdir)
         args.sampleList = os.path.abspath(args.sampleList)
         if not args.dirHDFS.startswith('/user'):
             args.dirHDFS = "/user{}".format(args.dirHDFS)
-        
+
         if args.projectId:
             args.workdir = os.path.join(args.workdir, args.projectId)
             args.dirHDFS = os.path.join(args.dirHDFS, args.projectId)
-        
+
         run(args)
-        
+
 
         return 0
     except KeyboardInterrupt:
