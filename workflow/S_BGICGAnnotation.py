@@ -49,7 +49,7 @@ class BGICGAnnotation(Workflow):
             
         cmd.append("${PROGRAM} ${PARAM} ${VCF} -r ${FORMAT} 2> ${LOG}|${DEPART} ${DEPARTPARAM} -p ${OUTPUT}/")
         cmd.append('if [ $? -ne 0 ]; then\n\techo "[WARNING]  ${SAMPLE} - BGICGAnnotation failed." >> %s\n\texit 1\nelse' %self.logfile)
-        cmd.append('\techo "[INFO   ]  ${SAMPLE} - BGICGAnnotation complete." >> %s\nfi\n' % self.logfile)
+        cmd.append('\techo "[INFO   ]  ${SAMPLE} - BGICGAnnotation complete." >> %s\n\texit 1\nfi\n' % self.logfile)
         
         cmd.append('echo "excel report:${SAMPLE}"')
         cmd.append('cmd=""')

@@ -9,7 +9,7 @@ class bamSort(Workflow):
     """ bamSort """
 
     INIT = bundle(bamSort=bundle())
-    INIT.bamSort.program = "hadoop-bam.jar"
+    INIT.bamSort.program = "hadoop-bam-x.7.0.jar"
     INIT.bamSort.picard = "picard.x.1.jar"
     INIT.bamSort.output_format = 'file'
     # INIT.bamSort.bamindex = False
@@ -24,8 +24,6 @@ class bamSort(Workflow):
         self.bamSort.program = self.expath('bamSort.program')
         self.bamSort.picard = self.expath('bamSort.picard')
 
-        outdir = bundle()
-            
         reducer = self.hadoop.reducer_num
         if self.option.multiSample:
             redeuce_per_node = 10
@@ -70,7 +68,7 @@ class bamSort(Workflow):
         cmd.append("allparts=")
         cmd.append("%s ${INPUT}/part* |awk '{print $%d}' > ${BAMLIST}" % (fs_cmd.ls, (not self.hadoop.ishadoop2 and self.hadoop.is_at_TH) and 9 or 8))
         cmd.append('for i in `cat ${BAMLIST}`;do allparts="${allparts} $i";done')
-        cmd.append("${PROGRAM} sort -F BAM -o ${OUTDIR} --reducers ${REDUCERNUM} ${HDFSTMP} ${allparts}")
+        cmd.append("${PROGRAM} sort -F BAM -o ${OUTDIR} --reducers ${REDUCERNUM} ${HDFSTMP} ${allparts} &")
                     
         #write script
         scriptPath = \

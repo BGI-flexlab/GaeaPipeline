@@ -23,7 +23,6 @@ class graph(Workflow):
         self.graph.exonGraph = self.expath('graph.exonGraph',False)
         self.graph.totalCoverageDepth = self.expath('graph.totalCoverageDepth',False)
         self.graph.depthAccumlate = self.expath('graph.depthAccumlate',False)
-        self.graph.gaeaInsertsize = self.expath('graph.gaeaInsertsize',False)
         
         _,output =  commands.getstatusoutput('perl %s/bin/require_config.pl %s' % (self.GAEA_HOME,self.file.annoProtoclConfig))
         config = eval(output)
@@ -77,7 +76,7 @@ class graph(Workflow):
         if self.graph.get('uncoverAnno'):
             trans = ''
             if config.get("trans"):
-                trans = '-trans %s' % config["trans"]
+                graph_trans = '-trans %s' % config["trans"]
             else:
                 impl.log.warning("No config.trans value!")
             cmd.append('echo "uncover_anno:"')
@@ -85,6 +84,7 @@ class graph(Workflow):
             cmd.append('perl ${uncoverAnno} -uncover $i %s -outdir ${WORKDIR}/QC/graph/uncover_anno;\ndone\n' % trans)
             
         if self.graph.get('depthAccumlate'):
+            cmd.append('echo "depthAccumlate:"')
             outdir = impl.mkdir("%s/QC/graph/depth_accumlate" % self.option.workdir)
             with open(os.path.join(self.option.workdir,'temp/bam_qc_depth.list'),'w') as f:
                 for sample in self.sample:

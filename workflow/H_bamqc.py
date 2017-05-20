@@ -22,11 +22,15 @@ class bamqc(Workflow):
         
         #script template    
         fs_cmd = self.fs_cmd
-        cmd = []
+        cmd = ["export HADOOP_HEAPSIZE=4096"]
         cmd.append("%s ${OUTDIR}" % fs_cmd.delete )
         cmd.append("${PROGRAM} -b ${INPUT} -d ${REF} -o ${OUTDIR} ${REGION} -R ${REDUCERNUM} ${PARAM}")
         cmd.append("#rm exists files:")
         
+        if 'newCnv' in self.analysisList:
+            if self.bamqc.parameter.find('-C') == -1:
+                self.bamqc.parameter += ' -C '
+
         if self.option.multiSample:
             for sample_name in self.sample:
                 cmd.append("rm ${QCDIR}/%s.bam.report.txt ${QCDIR}/%s.unmapped.bed" % (sample_name,sample_name))
@@ -34,6 +38,13 @@ class bamqc(Workflow):
                 cmd.append("rm ${QCDIR}/%s.depth.txt"% sample_name)
                 if self.bamqc.parameter.find('-A') != -1:
                     cmd.append("rm -rf ${QCDIR}/%s.anno_region.txt ${QCDIR}/%s.anno_region_low_depth.txt"% (sample_name,sample_name))
+                if self.bamqc.parameter.find('-C') != -1:
+                    pool = self.sample[sample_name].get('pool')
+                    cnvdir = impl.mkdir(self.option.workdir, "variation", 'cnv', pool)
+                    if self.hadoop.fs_mode == 'hdfs':
+                        cmd.append("\n#cp from hdfs to local:")
+                        cmd.append("rm -rf %s/%s*" % (cnvdir,sample_name))
+                        cmd.append("%s ${OUTDIR}/cnvDepth/%s* %s" % (fs_cmd.cp,sample_name,cnvdir))
         else:
             cmd.append("rm ${QCDIR}/*bam.report.txt ${QCDIR}/*unmapped.bed" )
             cmd.append("rm ${QCDIR}/*insert.xls ${QCDIR}/*chromosome.txt")

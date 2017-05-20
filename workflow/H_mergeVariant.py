@@ -11,7 +11,8 @@ class mergeVariant(Workflow):
     INIT = bundle(mergeVariant=bundle())
     INIT.mergeVariant.sort = "vcf-sort"
     INIT.mergeVariant.merge = "vcfmerge.pl"
-    INIT.mergeVariant.filter = "Medicine/vcf_snp_indel_filter.pl"
+#    INIT.mergeVariant.filter = "Medicine/vcf_snp_indel_filter.pl"
+    INIT.mergeVariant.filter = ""
     INIT.mergeVariant.split = "Medicine/vcf_sample_split.pl"
     INIT.mergeVariant.filter_param = '-snp "QD<2.0 || MQ<40.0 || FS>60.0 || HaplotypeScore>13.0 || MQRankSum<-12.5 || ReadPosRankSum<-8.0" -indel "ReadPosRankSum<-20.0 ||InbreedingCoeff<-0.8 || FS>200.0"'
     INIT.mergeVariant.output_format = ''
@@ -97,7 +98,7 @@ class mergeVariant(Workflow):
                     vcf_suffix = 'GaeaGenotyper.sorted.filter.vcf.gz'
 
             for sampleName in inputInfo:
-                outputPath = impl.mkdir(self.option.workdir,"variantion",'genotype',sampleName)
+                outputPath = impl.mkdir(self.option.workdir,"variation",'genotype',sampleName)
                 scriptsdir = os.path.join(self.gaeaScriptsDir,sampleName)
                 #global param
                 ParamDict = {

@@ -9,7 +9,7 @@ class realignment(Workflow):
     """ realignment """
 
     INIT = bundle(realignment=bundle(),ref=bundle(normal=bundle()))
-    INIT.realignment.program = "GaeaDuplicateMarker.jar"
+    INIT.realignment.program = "GaeaRealigner.jar"
     INIT.realignment.parameter = ''
 
     def run(self, impl, dependList):

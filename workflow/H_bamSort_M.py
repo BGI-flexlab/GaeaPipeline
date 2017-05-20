@@ -25,8 +25,6 @@ class bamSort_M(Workflow):
         self.bamSort_M.program = self.expath('bamSort_M.program')
         self.bamSort_M.picard = self.expath('bamSort_M.picard')
 
-        outdir = bundle()
-            
         reducer = self.hadoop.reducer_num
         if self.option.multiSample:
             redeuce_per_node = 10
@@ -67,9 +65,12 @@ class bamSort_M(Workflow):
             
         #script template    
         fs_cmd = self.fs_cmd
+        inputTag = ''
+        if dependList[0] == "alignment":
+            inputTag = '/*'
         cmd = []
         cmd.append("allparts=")
-        cmd.append("%s ${INPUT}/part* |awk '{print $%d}' > ${BAMLIST}" % (fs_cmd.ls, (not self.hadoop.ishadoop2 and self.hadoop.is_at_TH) and 9 or 8))
+        cmd.append("%s ${INPUT}%s/part* |awk '{print $%d}' > ${BAMLIST}" % (fs_cmd.ls,inputTag, (not self.hadoop.ishadoop2 and self.hadoop.is_at_TH) and 9 or 8))
         cmd.append('for i in `cat ${BAMLIST}`;do allparts="${allparts} $i";done')
         cmd.append("${PROGRAM} %s -o ${OUTDIR} -r ${REDUCERNUM} ${HDFSTMP} ${allparts}" % self.bamSort_M.parameter)
                     
