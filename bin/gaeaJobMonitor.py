@@ -102,6 +102,11 @@ def check_log(p, script, sampleName, n, step):
         
         sys.stdout.flush()
         sys.stderr.flush()
+
+    check_step = ['filter', 'alignment']
+    if step in check_step:
+        if mapN == 0 and reduceN == 0:
+            return False
         
     return True
 
@@ -111,9 +116,8 @@ def run(args,state):
     logger = Logger(os.path.join(state.scriptsDir,'log'),'1','gaeaJobMonitor',False).getlog()
     isComplete = bundle()
     
-    if args.debug:
-        print 'run_func_good'
-    
+    all_done = True    
+
     jobList = args.jobs.split(',')
     
     if jobList[0] == 'init':
@@ -123,12 +127,11 @@ def run(args,state):
     for num,step in enumerate(jobList):
         if analysisDict[step].platform == 'S':
             continue
-
-
+        
         n = state.analysisList.index(step)
         if state.analysisList[0] != 'init':
             n += 1
-
+        
         script = state.results[step]['script'][sampleName]
         if num > 0:
             for depStep in analysisDict[step].depend:
@@ -138,43 +141,86 @@ def run(args,state):
         if isComplete.has_key(step) and isComplete[step] == False:
             logger.warning('%s - step %d: %s failed' % (sampleName, n, step))
             continue
-
+        
         printtime('step: %s start...' % step)
-        out_fh = open(script+'.o', 'w')
-        p = subprocess.Popen('sh %s' % script, shell=True, stdout=out_fh, stderr=subprocess.PIPE)
+        p = subprocess.Popen('sh %s' % script, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         isComplete[step] = check_log(p,script,sampleName,n, step)
-        if isComplete[step]:
+        if isComplete[step] or step == 'alignment':
+            if step == 'alignment':
+                isComplete[step] = True
             printtime("step: %s complete" % step)
             logger.info('%s - step %d: %s complete' % (sampleName, n, step))
+            out_fh = open(script+'.o', 'w')
+            for line in p.stdout.readlines():    
+                print >>out_fh, line[:-1]
             p.wait()
         else:
+            all_done = False    
             printtime("%s failed" % step)
             logger.warning('%s - step %d: %s failed' % (sampleName, n, step))
             if p.returncode == None:
                 p.kill()
-        out_fh.close()
-
-def HDFSclean(args,state,cleanList,steptag,size_threshold=10):
+                
+    return all_done
+                #don't qdel 
+#                 sys.exit(1)
+#         elif args.jobList != None and os.path.exists(args.jobList):
+#             sge = get_SGE_state(args.jobList)
+#             if sge:
+#                 jobId = sge[sampleName][step]
+#                 hold_jid = ''
+#                 for depstep in analysisDict.get(step).depend:
+#                     if not isComplete[depStep]:
+#                         isComplete[step] = False
+#                         break
+#                     if analysisDict.get(depstep).platform == 'HPC':
+#                         hold_jid += sge[sampleName][depstep] + ','
+#                         
+#                 if isComplete.has_key(step) and isComplete[step] == False:
+#                     subprocess.call('qdel %s' % str(jobId),shell=True)
+#                     continue
+#                 
+#                 if not hold_jid:
+#                     hold_jid = 0       
+#                 subprocess.call('qalter -hold_jid %s %s' % (hold_jid,str(jobId)),shell=True)
+                    
+#         sys.stdout.flush()
+#         sys.stderr.flush()
+      # return all_done
+        
+def HDFSclean(sampleName,state,cleanList,steptag,size_threshold=10):
     cleanBoolean = True
-    for sample in state.results[steptag].output:
-        data = state.results[steptag].output[sample]
+    if state.option.multi:
+        for sample in state.results[steptag].output:
+            data = state.results[steptag].output[sample]
+            if not os.path.exists(data):
+                cleanBoolean = False
+                print "No bam file..."
+            elif os.path.getsize(data)/1024 < size_threshold:
+                cleanBoolean = False
+                print "No vcf file..."
+    else:
+        data = state.results[steptag].output[sampleName]
         if not os.path.exists(data):
             cleanBoolean = False
+            print "No bam file..."
         elif os.path.getsize(data)/1024 < size_threshold:
             cleanBoolean = False
+            print "No vcf file..."
+    print "Done"
             
     if cleanBoolean:
         for step in cleanList:
             if not step in state.analysisList:
                 continue
-            inputInfo = state.results[step].output[args.sampleName]
+            inputInfo = state.results[step].output[sampleName]
             if isinstance(inputInfo, bundle):
                 for path in inputInfo.values():
                     cmd = "%s %s" % (state.fs_cmd.delete,path)
-                    subprocess.Popen(cmd,shell=True)
+                    subprocess.call(cmd,shell=True)
             elif isinstance(inputInfo, str):
                 cmd = "%s %s" % (state.fs_cmd.delete,inputInfo)
-                subprocess.Popen(cmd,shell=True)
+                subprocess.call(cmd,shell=True)
                 
     return cleanBoolean
 
@@ -213,23 +259,30 @@ USAGE
         args = parser.parse_args()
         state = ParseConfig(args.state).parseState()
         
-        run(args,state)
+        isclean = run(args,state)
+        subprocess.call("%s %s" % (state.fs_cmd.delete, os.path.join(state.option.dirHDFS,args.sampleName,'tmp')),shell=True)
         
         #TODO user-define the clean dir
-        if not args.unclean:
-            cleanedList = []
+        if not state.option.unclean:
             if state.results.has_key('bamSort'):
                 cleanList = ['filter','alignment','rmdup','realignment']
-                HDFSclean(args,state,cleanList,'bamSort',1024)
+                isclean = HDFSclean(args.sampleName,state,cleanList,'bamSort',1024)
                 if state.results.has_key('mergeVariant'):
-                    cleanList = ['baserecal','genotype']
-                    HDFSclean(args,state,cleanList,'mergeVariant')
-            else:
-                cleanList = ['filter','alignment','rmdup','realignment','genotype']
+                    cleanList = ['filter','alignment','rmdup','realignment','genotype']
+                    isclean2 = HDFSclean(args.sampleName,state,cleanList,'mergeVariant')
+                    if not isclean2:
+                        isclean = False
+            elif state.results.has_key('mergeVariant'):
                 if state.results.has_key('mergeVariant'):
-                    cleanedList.extend(['baserecal','genotype'])
-                    HDFSclean(args,state,cleanList,'mergeVariant')
-        
+                    cleanList = ['filter','alignment','rmdup','realignment','genotype']
+                    isclean = HDFSclean(args.sampleName,state,cleanList,'mergeVariant')
+
+            if isclean:		    
+                cmd = "%s %s/%s" % (state.fs_cmd.delete, state.option.dirHDFS, args.sampleName)
+                #subprocess.call(cmd, shell=True)
+        if isclean:
+            with open(os.path.join(state.scriptsDir,'log'), 'a') as f:
+                f.write("Done!")
         return 0
     except KeyboardInterrupt:
         ### handle keyboard interrupt ###
