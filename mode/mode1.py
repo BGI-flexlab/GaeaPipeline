@@ -1,7 +1,8 @@
-from gaeautils import Logger
-from gaeautils.bundle import bundle
 import glob
 import os
+
+from gaeautils import Logger
+from gaeautils import bundle
 
 logger = Logger('log.txt','2',"mode1",True).getlog()
 def parse_sample(sampleList):

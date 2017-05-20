@@ -1,11 +1,11 @@
 # encoding: utf-8
 import os
 import shutil
-import subprocess
 
-from gaeautils.bundle import bundle
-from gaeautils.workflow import Workflow
 import qualitySystem
+
+from gaeautils import Workflow
+from gaeautils import bundle
 
 
 class init(Workflow):

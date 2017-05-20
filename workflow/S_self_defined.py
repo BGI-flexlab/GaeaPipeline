@@ -1,8 +1,9 @@
 # encoding: utf-8
 
-from gaeautils.bundle import bundle
-from gaeautils.workflow import Workflow
 from string import Template
+
+from gaeautils import Workflow
+from gaeautils import bundle
 
 
 class self_defined(Workflow):

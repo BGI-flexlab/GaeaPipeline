@@ -1,8 +1,10 @@
 # encoding: utf-8
 import commands
-from gaeautils.bundle import bundle
-from gaeautils.workflow import Workflow
 import os
+
+from gaeautils import Workflow
+from gaeautils import bundle
+
 
 class graph(Workflow):
     """ standalone step : graph """

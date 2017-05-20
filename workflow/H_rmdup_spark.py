@@ -1,8 +1,8 @@
 # encoding: utf-8
 import os
 
-from gaeautils.bundle import bundle
-from gaeautils.workflow import Workflow
+from gaeautils import Workflow
+from gaeautils import bundle
 
 
 class rmdup_spark(Workflow):

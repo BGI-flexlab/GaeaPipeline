@@ -1,5 +1,7 @@
-from gaeautils import bundle
 import re
+
+from gaeautils import bundle
+
 
 def parse_sample(sampleList):
     

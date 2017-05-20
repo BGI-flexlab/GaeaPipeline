@@ -1,7 +1,7 @@
 # encoding: utf-8
 
-from gaeautils.bundle import bundle
-from gaeautils.workflow import Workflow
+from gaeautils import Workflow
+from gaeautils import bundle
 
 
 class HelloWorld(Workflow):

@@ -1,8 +1,9 @@
 # encoding: utf-8
-import os,re
-from gaeautils.bundle import bundle
-from gaeautils.workflow import Workflow
+import os
 import shutil
+
+from gaeautils import Workflow
+from gaeautils import bundle
 
 
 class alignment(Workflow):

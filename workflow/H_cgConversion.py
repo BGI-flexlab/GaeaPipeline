@@ -1,8 +1,9 @@
 # encoding: utf-8
-from gaeautils.bundle import bundle
-from gaeautils.workflow import Workflow
 import os
 import shutil
+
+from gaeautils import Workflow
+from gaeautils import bundle
 
 
 class cgConversion(Workflow):

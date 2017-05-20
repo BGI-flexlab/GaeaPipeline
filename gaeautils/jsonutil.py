@@ -1,12 +1,14 @@
 #!/usr/bin/python
 
-import sys, os, re
 import json
+import re
+
 # try:
 #     import json
 # except:
 #     import simplejson as json
 import bundle
+
 
 def dumps(obj):
     return json.dumps(obj, indent=2)
@@ -96,7 +98,7 @@ def flatten(obj, objName='<top>'):
     """
 
     r = []
-    if isinstance(obj, ( dict, bundle )):
+    if isinstance(obj, (dict, bundle)):
         if objName:
             r += [ ( objName, 'bundle()' ) ]
         for k, v in obj.iteritems():

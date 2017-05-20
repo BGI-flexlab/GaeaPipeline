@@ -1,7 +1,6 @@
 import os
 
 import gaeautils
-from gaeautils.bundle import bundle
 
 
 class JobMonitor(object):
