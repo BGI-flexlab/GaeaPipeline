@@ -39,7 +39,9 @@ class Task(Thread):
         if 'exclusive_task' not in self.state[task_name]:
             return True
 
-        astrcmp = lambda x, y: x.lower() == y.lower()
+        def astrcmp(x, y):
+            return x.lower() == y.lower()
+
         if astrcmp(self.state[task_name].exclusive_task, 'false') or self.state[task_name].exclusive_task is False:
             return False
         return True
@@ -50,6 +52,7 @@ class Task(Thread):
         return status
 
     def run_task(self, sample, task_name):
+        # print self.__class__.__name__, sample, task_name
         script = self.state.results[task_name].script[sample]
         out = open('{}.o'.format(script), 'w')
         err = open('{}.e'.format(script), 'w')
@@ -85,11 +88,15 @@ class Task(Thread):
 class NonExclusiveTask(Task):
     def __init__(self, cond, state, queue, ne_queue):
         super(NonExclusiveTask, self).__init__(cond, state, queue, ne_queue)
+        self.ne_step = None  # todo 将独占任务及其依赖任务放回queue
 
     def _is_exclusive_task(self, task_name):
         if 'exclusive_task' not in self.state[task_name]:
             return False
-        astrcmp = lambda x, y: x.lower() == y.lower()
+
+        def astrcmp(x, y):
+            return x.lower() == y.lower()
+
         if astrcmp(self.state[task_name].exclusive_task, 'false') or self.state[task_name].exclusive_task is False:
             return False
         return True
