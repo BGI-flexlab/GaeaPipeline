@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# encoding: utf-8
 import os
 import subprocess
 import sys
@@ -22,9 +23,8 @@ _sentinel = object()
 
 
 class Task(Thread):
-    def __init__(self, cond, state, queue, ne_queue):
+    def __init__(self, state, queue, ne_queue):
         super(Task, self).__init__()
-        self.cond = cond
         self.queue = queue
         self.ne_queue = ne_queue
         self.state = state
@@ -47,17 +47,15 @@ class Task(Thread):
         return True
 
     def _check_log(self, err):
-        print err
+#        print err
         status = 'done'
         return status
 
     def run_task(self, sample, task_name):
-        # print self.__class__.__name__, sample, task_name
         script = self.state.results[task_name].script[sample]
-        out = open('{}.o'.format(script), 'w')
-        err = open('{}.e'.format(script), 'w')
-        p = subprocess.Popen('sh {}'.format(script), shell=True, stdout=out, stderr=err)
-        p.wait()
+        out = '{}.o'.format(script)
+        err = '{}.e'.format(script)
+        subprocess.call('sh {sc} >{out} 2>{err}'.format(sc=script, out=out, err=err), shell=True)
         if 'status' not in self.state.results[task_name]:
             self.state.results[task_name].status = {}
         self.state.results[task_name].status[sample] = self._check_log(err)
@@ -86,9 +84,9 @@ class Task(Thread):
 
 
 class NonExclusiveTask(Task):
-    def __init__(self, cond, state, queue, ne_queue):
-        super(NonExclusiveTask, self).__init__(cond, state, queue, ne_queue)
-        self.ne_step = None  # todo 将独占任务及其依赖任务放回queue
+    def __init__(self, state, queue, ne_queue):
+        super(NonExclusiveTask, self).__init__(state, queue, ne_queue)
+        self.ne_step = None # todo 将独占任务及其依赖任务放回queue
 
     def _is_exclusive_task(self, task_name):
         if 'exclusive_task' not in self.state[task_name]:
@@ -134,12 +132,11 @@ class Scheduler(object):
     def start(self):
         task_queue = Queue()
         non_exclusive_task_queue = Queue()
-        cond = Condition()
-        self.task_t = Task(cond, self.state, task_queue, non_exclusive_task_queue)
+        self.task_t = Task(self.state, task_queue, non_exclusive_task_queue)
         # self.task_t.setDaemon(True)
         self.task_t.start()
 
-        self.nx_task_t = NonExclusiveTask(cond, self.state, task_queue, non_exclusive_task_queue)
+        self.nx_task_t = NonExclusiveTask(self.state, task_queue, non_exclusive_task_queue)
         # self.nx_task_t.setDaemon(True)
         self.nx_task_t.start()
 
@@ -180,6 +177,9 @@ def main():
         return 1
 
     state = ParseConfig(args.state).parseState()
+    state.bamSort.exclusive_task = 'False'
+    if 'bamindex' in state.self_defined:
+        state.bamindex.exclusive_task = 'False'
 
     sched = Scheduler(state)
     sched.parse_rerun(args.rerun)
